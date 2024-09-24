@@ -4,8 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using api.Data;
 using api.Dtos;
+using api.Interfaces;
 using api.Mappers;
 using api.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
@@ -15,50 +17,57 @@ namespace api.Controllers
     public class Employees : ControllerBase
     {
         private readonly ApplicationDBContext _context;
-        public Employees(ApplicationDBContext context) {
+        private readonly IEmployeeRepository _empRepo;
+        public Employees(ApplicationDBContext context, IEmployeeRepository empRepo) {
             _context = context;
+            _empRepo = empRepo;
         }
 
         [HttpGet]
-        public IActionResult getAll() 
+        public async Task<IActionResult> GetAll() 
         {
-            var employees = _context.Employee.ToList();
+            var employees = await _empRepo.AllEmployeesAsync();
+
             return Ok(employees);
         }
 
         [HttpGet]
         [Route("{id}")]
-        public IActionResult GetById([FromRoute] int id) 
+        public async Task<IActionResult> GetById([FromRoute] int id) 
         {
-            var employee = _context.Employee.Find(id);
+            var employee = await _empRepo.GetEmployeeAsync(id);
+
             if (employee == null) return NotFound();
+
             return Ok(employee);
         }
 
         [HttpPost]
-        public IActionResult AddEmployee([FromBody] EmployeeDto employee)
+        public async Task<IActionResult> AddEmployee([FromBody] CreateEmployeeDto employee)
         {
-            var EmployeeModel = employee.FromEmployeeDto();
-            _context.Add(EmployeeModel);
-            _context.SaveChanges();
+            var EmployeeModel = await _empRepo.AddEmployeeAsync(employee.FromCreateEmployeeDto());
 
             return CreatedAtAction(nameof(GetById), new { id = EmployeeModel.Id }, EmployeeModel.ToEmployeeDto());
         }
 
         [HttpPut]
         [Route("{id}")]
-        public IActionResult UpdateEmployee([FromRoute] int id, [FromBody] CreateEmployeeDto employee) 
+        public async Task<IActionResult> UpdateEmployee([FromRoute] int id, [FromBody] UpdateEmployeeDto employee) 
         {
-            var EmployeeModel = _context.Employee.FirstOrDefault( x => x.Id == id);
+            var EmployeeModel = await _empRepo.UpdateEmployeeAsync(id, employee.FromUpdateEmployeeDto(id));
 
-            if(EmployeeModel == null) return NotFound();
+            if(EmployeeModel == null) return NotFound("Employee does not exist"); 
 
-            EmployeeModel.Name = employee.Name;
-            EmployeeModel.EmployeeNumber = employee.EmployeeNumber;
-            EmployeeModel.Surname = employee.Surname;
-            EmployeeModel.HoursWorked = employee.HoursWorked;
+            return Ok(EmployeeModel.ToEmployeeDto());
+        }
 
-            _context.SaveChanges();
+        [HttpDelete]
+        [Route("{id}")]
+        public async Task<IActionResult> DeleteEmployee([FromRoute] int id) 
+        {
+            var EmployeeModel = await _empRepo.DeleteEmployeeAsync(id);
+
+            if(EmployeeModel == null) return NotFound("Employee does not exist"); 
 
             return Ok(EmployeeModel.ToEmployeeDto());
         }

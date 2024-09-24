@@ -17,6 +17,6 @@ namespace api.Dtos
 
         public int HoursWorked{get;set;}
 
-        public List<Days> Days{get;set;} = new List<Days>();
+        // public List<Days> Days{get;set;} = new List<Days>();
     }
 }

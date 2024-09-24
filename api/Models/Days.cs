@@ -12,7 +12,7 @@ namespace api.Models
 
         public string DayName{get;set;} = string.Empty;
 
-        public int? EmployeeId{get;set;}
+        public int EmployeeId{get;set;}
 
         // public Employee? Employee{get;set;}
     }
